@@ -11,17 +11,20 @@
 <body>
 	<h1>WebSocket 投票系統</h1>
 	<div id="status">连接状态：未连接</div>
+	<div id="optionManagement">
+		<h2>選項管理</h2>
+		<div id="optionContainer"></div>
+		<button onclick="addOption()">添加選項</button>
+		<button onclick="removeOption()">移除選項</button>
+	</div>
 	<div id="voteSettings">
 		<h2>投票設置</h2>
 		<input type="text" id="voteTitle" placeholder="投票主題">
 		<input type="text" id="startVoteKeyword" placeholder="開始投票關鍵字">
-		<div id="optionInputs"></div>
-		<button onclick="addOption()">添加選項</button>
-		<button onclick="removeOption()">移除選項</button>
 		<button onclick="startVote()">開始投票</button>
 		<button onclick="endVote()">結束投票</button>
-		<button onclick="toggleAnonymous()">切換匿名模式</button>
-		<button onclick="exportScoreHistoryCSV()">導出投票歷史CSV</button>
+		<button onclick="restartCurrentVote()">重新開始投票</button>
+		<button onclick="toggleVoteChange()">允许更改投票</button>
 	</div>
 	<div id="voteResults">
 		<h2>投票結果</h2>
@@ -30,6 +33,7 @@
 	</div>
 	<div id="participantCards">
 		<h2>參與者卡片</h2>
+		<button onclick="toggleAnonymous()">切換匿名模式</button>
 		<div id="cardContainer"></div>
 	</div>
 	<div id="messages">
@@ -38,8 +42,12 @@
 	</div>
 	<div id="history">
 		<h2>歷史記錄</h2>
+		<button onclick="exportScoreHistoryCSV()">導出投票歷史CSV</button>
 		<div id="scoreHistory"></div>
-		<div id="userHistory"></div>
+	</div>
+	<div id="userHistory">
+		<h2>用戶歷史</h2>
+		<div id="userHistoryContainer"></div>
 	</div>
 	<script src="script.js"></script>
 </body>

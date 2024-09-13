@@ -20,7 +20,8 @@ h3 {
 #voteResults,
 #participantCards,
 #messages,
-#history {
+#history,
+#userHistory {
 	margin-bottom: 20px;
 	border: 1px solid #ccc;
 	padding: 10px;
@@ -96,4 +97,26 @@ button {
 #scoreInputs input {
 	width: 50px;
 	margin-left: 10px;
+}
+
+.option-input {
+	margin-bottom: 10px;
+}
+
+.option-input input {
+	margin-right: 10px;
+}
+
+#optionManagement {
+	margin-bottom: 20px;
+	border: 1px solid #ccc;
+	padding: 10px;
+}
+
+#optionContainer {
+	margin-bottom: 10px;
+}
+
+#userHistoryContainer p {
+	margin: 5px 0;
 }

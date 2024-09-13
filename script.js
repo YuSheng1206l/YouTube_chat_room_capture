@@ -7,33 +7,19 @@ let voteCount = 0;
 let scoreHistory = [];
 let userHistory = {};
 let voteTitle = "";
+let optionCount = 2;
+let isVoteInProgress = false;
+let allowVoteChange = false;
 
 function connectWebSocket() {
 	ws = new WebSocket("ws://127.0.0.1:11180/sub");
-
-	ws.onopen = function (event) {
-		console.log("WebSocket connection established");
-		updateStatus("已连接");
-	};
-
-	ws.onmessage = function (event) {
-		console.log("Received message:", event.data);
+	ws.onopen = () => updateStatus("已连接");
+	ws.onmessage = (event) => {
 		const info = extractInfo(event.data);
-		if (info) {
-			console.log("Extracted info:", info);
-			processMessage(info);
-		} else {
-			console.log("Failed to extract info from message");
-		}
+		if (info) processMessage(info);
 	};
-
-	ws.onerror = function (error) {
-		updateStatus("错误：" + error.message);
-	};
-
-	ws.onclose = function (event) {
-		updateStatus("连接已关闭");
-	};
+	ws.onerror = (error) => updateStatus("错误：" + error.message);
+	ws.onclose = () => updateStatus("连接已关闭");
 }
 
 function updateStatus(status) {
@@ -41,22 +27,20 @@ function updateStatus(status) {
 }
 
 function displayMessage(message) {
-	const messageContainer = document.getElementById("messageContainer");
 	const messageElement = document.createElement("p");
 	messageElement.textContent = message;
-	messageContainer.appendChild(messageElement);
+	document.getElementById("messageContainer").appendChild(messageElement);
 }
 
 function extractInfo(data) {
 	try {
 		const jsonData = JSON.parse(data);
 		if (jsonData.type === "comments") {
-			for (const comment of jsonData.data.comments) {
-				const userData = comment.data;
-				const userId = userData.userId || "未知";
-				const speechText = userData.speechText || "未知";
-				return { userId, speechText };
-			}
+			const comment = jsonData.data.comments[0];
+			return {
+				userId: comment.data.userId || "未知",
+				speechText: comment.data.speechText || "未知"
+			};
 		}
 	} catch (error) {
 		console.error("无法解析JSON数据:", error);
@@ -65,72 +49,107 @@ function extractInfo(data) {
 }
 
 function processMessage(info) {
-	if (isVoting) {
-		const startVoteKeyword = document.getElementById("startVoteKeyword").value;
-		const [userStartKeyword, userOptionKeyword] = info.speechText.split(' ');
+	if (!isVoting) return;
 
-		if (userStartKeyword === startVoteKeyword) {
-			const votedOption = voteOptions.find(option => option.keyword === userOptionKeyword);
-			if (votedOption) {
-				const existingParticipant = participants.find(p => p.userId === info.userId);
-				if (existingParticipant) {
-					existingParticipant.vote = votedOption.keyword;
-				} else {
-					addParticipant(info.userId, votedOption.keyword);
-				}
-				displayMessage(`${info.userId} 參與了投票，選擇了 ${votedOption.name}`);
-				updateVoteResults();
-			} else {
-				displayMessage(`${info.userId} 嘗試投票，但輸入了無效的選項關鍵字: ${userOptionKeyword}`);
-			}
-		} else {
-			displayMessage(`${info.userId} 嘗試投票，但輸入了無效的開始投票關鍵字: ${userStartKeyword}`);
+	const startVoteKeyword = document.getElementById("startVoteKeyword").value;
+	const [userStartKeyword, userOptionKeyword] = info.speechText.split(' ');
+
+	if (userStartKeyword !== startVoteKeyword) {
+		displayMessage(`${info.userId} 尝试投票，但输入了无效的开始投票关键字: ${userStartKeyword}`);
+		return;
+	}
+
+	const votedOption = voteOptions.find(option => option.keyword === userOptionKeyword);
+	if (!votedOption) {
+		displayMessage(`${info.userId} 尝试投票，但输入了无效的选项关键字: ${userOptionKeyword}`);
+		return;
+	}
+
+	updateParticipantVote(info.userId, votedOption);
+	displayMessage(`${info.userId} 参与了投票，选择了 ${votedOption.name}`);
+	updateVoteResults();
+}
+
+function updateParticipantVote(userId, votedOption) {
+	const existingParticipant = participants.find(p => p.userId === userId);
+	if (existingParticipant) {
+		if (allowVoteChange) {
+			existingParticipant.vote = votedOption.keyword;
 		}
+	} else {
+		participants.push({ userId, vote: votedOption.keyword });
 	}
 }
 
 function addOption() {
-	const optionInputs = document.getElementById("optionInputs");
-	const optionDiv = document.createElement("div");
-	optionDiv.className = "option-input";
+	const optionContainer = document.getElementById('optionContainer');
+	const optionDiv = document.createElement('div');
+	optionDiv.className = 'option-input';
 	optionDiv.innerHTML = `
-        <input type="text" class="optionName" placeholder="選項名稱">
-        <input type="text" class="optionKeyword" placeholder="選項關鍵字">
-    `;
-	optionInputs.appendChild(optionDiv);
+		<input type="text" class="option-name" placeholder="选项名称">
+		<input type="text" class="option-keyword" placeholder="选项关键字">
+	`;
+	optionContainer.appendChild(optionDiv);
+	optionCount++;
 }
 
 function removeOption() {
-	const optionInputs = document.getElementById("optionInputs");
-	if (optionInputs.children.length > 0) {
-		optionInputs.removeChild(optionInputs.lastChild);
+	if (optionCount <= 2) {
+		alert('至少需要保留两个选项！');
+		return;
 	}
+	const optionContainer = document.getElementById('optionContainer');
+	optionContainer.removeChild(optionContainer.lastChild);
+	optionCount--;
 }
 
 function startVote() {
-	const startVoteKeyword = document.getElementById("startVoteKeyword").value;
-	voteTitle = document.getElementById("voteTitle").value || "未命名投票";
-	const optionInputs = document.querySelectorAll(".option-input");
-	voteOptions = Array.from(optionInputs).map((div, index) => ({
-		name: div.querySelector(".optionName").value || `選項${index + 1}`,
-		keyword: div.querySelector(".optionKeyword").value
+	if (isVoteInProgress) {
+		alert('投票已经开始，无法再次启动！');
+		return;
+	}
+
+	const optionInputs = document.querySelectorAll('.option-input');
+	const options = Array.from(optionInputs).map(div => ({
+		name: div.querySelector('.option-name').value.trim(),
+		keyword: div.querySelector('.option-keyword').value.trim()
 	}));
+
+	if (options.length < 2 || options.some(option => option.name === '' || option.keyword === '')) {
+		alert('请至少添加两个有效选项，并确保每个选项都有名称和关键字！');
+		return;
+	}
+
+	// 检查关键字是否唯一
+	const keywords = options.map(option => option.keyword);
+	if (new Set(keywords).size !== keywords.length) {
+		alert('每个选项的关键字必须是唯一的！');
+		return;
+	}
+
+	isVoteInProgress = true;
 	isVoting = true;
+	voteOptions = options;
 	participants = [];
-	displayMessage(`投票已開始，主題：${voteTitle}，關鍵字：${startVoteKeyword}`);
+	document.querySelector('button[onclick="startVote()"]').disabled = true;
+	document.querySelector('button[onclick="endVote()"]').disabled = false;
+	displayMessage("投票已开始");
 	updateVoteResults();
 }
 
 function endVote() {
-	isVoting = false;
-	displayMessage("投票已結束");
-	updateVoteResults();
-	showScoreModal();
-}
+	if (!isVoteInProgress) {
+		alert('当前没有进行中的投票！');
+		return;
+	}
 
-function addParticipant(userId, vote) {
-	participants.push({ userId, vote });
-	console.log(`Added participant: ${userId}, vote: ${vote}`); // 添加日誌
+	if (confirm('确定要结束当前投票吗？')) {
+		isVoteInProgress = false;
+		isVoting = false;
+		document.querySelector('button[onclick="startVote()"]').disabled = false;
+		document.querySelector('button[onclick="endVote()"]').disabled = true;
+		showScoreModal();
+	}
 }
 
 function updateVoteResults() {
@@ -138,15 +157,12 @@ function updateVoteResults() {
 	const optionResults = document.getElementById("optionResults");
 	const cardContainer = document.getElementById("cardContainer");
 
-	console.log(`Updating vote results. Total participants: ${participants.length}`); // 添加日誌
-
 	totalVotes.textContent = participants.length;
 	optionResults.innerHTML = "";
 	cardContainer.innerHTML = "";
 
 	voteOptions.forEach(option => {
 		const optionVotes = participants.filter(p => p.vote === option.keyword).length;
-		console.log(`Option ${option.name}: ${optionVotes} votes`); // 添加日誌
 		const resultElement = document.createElement("p");
 		resultElement.textContent = `${option.name}: ${optionVotes} 票`;
 		optionResults.appendChild(resultElement);
@@ -173,7 +189,7 @@ function updateVoteResults() {
 function toggleAnonymous() {
 	isAnonymous = !isAnonymous;
 	updateVoteResults();
-	displayMessage(isAnonymous ? "已切換到匿名模式" : "已切換到非匿名模式");
+	displayMessage(isAnonymous ? "已切换到匿名模式" : "已切换到非匿名模式");
 }
 
 function showScoreModal() {
@@ -181,9 +197,9 @@ function showScoreModal() {
 	modal.className = 'modal';
 	modal.innerHTML = `
         <div class="modal-content">
-            <h2>設置選項分數 - ${voteTitle}</h2>
+            <h2>设置选项分数 - ${voteTitle}</h2>
             <div id="scoreInputs"></div>
-            <button onclick="calculateScores()">計算分數</button>
+            <button onclick="calculateScores()">计算分数</button>
         </div>
     `;
 	document.body.appendChild(modal);
@@ -196,7 +212,7 @@ function showScoreModal() {
 		input.value = 0;
 		input.min = 0;
 		const label = document.createElement('label');
-		label.textContent = `${option.name} 分數：`;
+		label.textContent = `${option.name} 分数：`;
 		label.appendChild(input);
 		scoreInputs.appendChild(label);
 	});
@@ -215,10 +231,7 @@ function calculateScores() {
 
 	participants.forEach(participant => {
 		if (!userHistory[participant.userId]) {
-			userHistory[participant.userId] = {
-				votes: [],
-				totalScore: 0
-			};
+			userHistory[participant.userId] = { votes: [], totalScore: 0 };
 		}
 		const votedOption = scores.find(s => s.keyword === participant.vote);
 		if (votedOption) {
@@ -228,14 +241,13 @@ function calculateScores() {
 	});
 	updateUserHistory();
 
-	// 關閉模態窗口
 	document.querySelector('.modal').remove();
-	displayMessage("分數已計算完成");
+	displayMessage("分数已计算完成");
 }
 
 function updateScoreHistory() {
 	const scoreHistoryContainer = document.getElementById("scoreHistory");
-	scoreHistoryContainer.innerHTML = "<h3>比分歷史紀錄表</h3>";
+	scoreHistoryContainer.innerHTML = "<h3>比分历史记录表</h3>";
 	scoreHistory.forEach((result, index) => {
 		const resultElement = document.createElement("p");
 		resultElement.textContent = `第${index + 1}次投票：${result.map(r => `${r.name}, ${r.score}`).join('；')}`;
@@ -244,20 +256,23 @@ function updateScoreHistory() {
 }
 
 function updateUserHistory() {
-	const userHistoryContainer = document.getElementById("userHistory");
-	userHistoryContainer.innerHTML = "<h3>用戶總分</h3>";
+	const userHistoryContainer = document.getElementById("userHistoryContainer");
+	userHistoryContainer.innerHTML = "";
 	Object.entries(userHistory).forEach(([userId, data]) => {
 		const userElement = document.createElement("p");
-		userElement.textContent = `${userId}：總分：${data.totalScore}`;
+		userElement.textContent = `${userId}：总分：${data.totalScore}`;
 		userHistoryContainer.appendChild(userElement);
 	});
 }
 
 function exportScoreHistoryCSV() {
+	if (scoreHistory.length === 0) {
+		alert('尚未完成任何投票，无法导出CSV！');
+		return;
+	}
 	let csvContent = "data:text/csv;charset=utf-8,";
 
-	// 添加選項信息
-	csvContent += "選項信息:\n";
+	csvContent += "选项信息:\n";
 	scoreHistory.forEach((round, index) => {
 		csvContent += `第${index + 1}次投票 (${voteTitle}),`;
 		round.forEach(option => {
@@ -265,28 +280,24 @@ function exportScoreHistoryCSV() {
 		});
 		csvContent += "\n";
 	});
-	csvContent += "\n";  // 添加一個空行
+	csvContent += "\n";
 
-	// 添加標題行
-	csvContent += "用戶ID,總分," + scoreHistory.map((_, index) => `第${index + 1}次投票`).join(",") + "\n";
+	csvContent += "用户ID,总分," + scoreHistory.map((_, index) => `第${index + 1}次投票`).join(",") + "\n";
 
-	// 添加用戶數據
 	Object.entries(userHistory).forEach(([userId, data]) => {
 		let row = [userId, data.totalScore];
-		// 填充每次投票的選擇，如果沒有參與某次投票則留空格
 		for (let i = 0; i < voteCount; i++) {
 			const vote = data.votes[i];
 			if (vote) {
 				const option = scoreHistory[i].find(s => s.keyword === vote);
 				row.push(option ? option.keyword : vote);
 			} else {
-				row.push(" ");  // 使用空格代替空值
+				row.push(" ");
 			}
 		}
 		csvContent += row.join(",") + "\n";
 	});
 
-	// 創建下載鏈接並觸發下載
 	const encodedUri = encodeURI(csvContent);
 	const link = document.createElement("a");
 	link.setAttribute("href", encodedUri);
@@ -296,4 +307,32 @@ function exportScoreHistoryCSV() {
 	document.body.removeChild(link);
 }
 
+function restartCurrentVote() {
+	if (!isVoteInProgress) {
+		alert('当前没有进行中的投票！');
+		return;
+	}
+
+	if (confirm('确定要重新开始当前投票吗？这将清空所有已收到的投票数据。')) {
+		participants = [];
+		updateVoteResults();
+		displayMessage("当前投票已重新开始，所有投票数据已清空");
+	}
+}
+
+function toggleVoteChange() {
+	allowVoteChange = !allowVoteChange;
+	const button = document.querySelector('button[onclick="toggleVoteChange()"]');
+	button.textContent = allowVoteChange ? '禁止更改投票' : '允许更改投票';
+	displayMessage(allowVoteChange ? "现在允许更改投票" : "现在禁止更改投票");
+}
+
+function init() {
+	const optionContainer = document.getElementById('optionContainer');
+	for (let i = 0; i < 2; i++) {
+		addOption();
+	}
+}
+
 window.addEventListener("load", connectWebSocket);
+window.onload = init;

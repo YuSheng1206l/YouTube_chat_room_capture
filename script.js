@@ -6,6 +6,7 @@ let isAnonymous = false;
 let voteCount = 0;
 let scoreHistory = [];
 let userHistory = {};
+let voteTitle = "";
 
 function connectWebSocket() {
 	ws = new WebSocket("ws://127.0.0.1:11180/sub");
@@ -65,21 +66,25 @@ function extractInfo(data) {
 
 function processMessage(info) {
 	if (isVoting) {
-		const votedOption = voteOptions.find(option => option.keyword === info.speechText);
-		if (votedOption) {
-			// 檢查是否已經投票
-			const existingParticipant = participants.find(p => p.userId === info.userId);
-			if (existingParticipant) {
-				// 如果已經投票，更新他的選擇
-				existingParticipant.vote = votedOption.keyword;
+		const startVoteKeyword = document.getElementById("startVoteKeyword").value;
+		const [userStartKeyword, userOptionKeyword] = info.speechText.split(' ');
+
+		if (userStartKeyword === startVoteKeyword) {
+			const votedOption = voteOptions.find(option => option.keyword === userOptionKeyword);
+			if (votedOption) {
+				const existingParticipant = participants.find(p => p.userId === info.userId);
+				if (existingParticipant) {
+					existingParticipant.vote = votedOption.keyword;
+				} else {
+					addParticipant(info.userId, votedOption.keyword);
+				}
+				displayMessage(`${info.userId} 參與了投票，選擇了 ${votedOption.name}`);
+				updateVoteResults();
 			} else {
-				// 如果是新參與者，添加到列表中
-				addParticipant(info.userId, votedOption.keyword);
+				displayMessage(`${info.userId} 嘗試投票，但輸入了無效的選項關鍵字: ${userOptionKeyword}`);
 			}
-			displayMessage(`${info.userId} 參與了投票，選擇了 ${votedOption.name}`);
-			updateVoteResults();
 		} else {
-			displayMessage(`${info.userId} 嘗試投票，但輸入了無效的關鍵字: ${info.speechText}`);
+			displayMessage(`${info.userId} 嘗試投票，但輸入了無效的開始投票關鍵字: ${userStartKeyword}`);
 		}
 	}
 }
@@ -104,6 +109,7 @@ function removeOption() {
 
 function startVote() {
 	const startVoteKeyword = document.getElementById("startVoteKeyword").value;
+	voteTitle = document.getElementById("voteTitle").value || "未命名投票";
 	const optionInputs = document.querySelectorAll(".option-input");
 	voteOptions = Array.from(optionInputs).map((div, index) => ({
 		name: div.querySelector(".optionName").value || `選項${index + 1}`,
@@ -111,7 +117,7 @@ function startVote() {
 	}));
 	isVoting = true;
 	participants = [];
-	displayMessage(`投票已開始，關鍵字：${startVoteKeyword}`);
+	displayMessage(`投票已開始，主題：${voteTitle}，關鍵字：${startVoteKeyword}`);
 	updateVoteResults();
 }
 
@@ -175,7 +181,7 @@ function showScoreModal() {
 	modal.className = 'modal';
 	modal.innerHTML = `
         <div class="modal-content">
-            <h2>設置選項分數</h2>
+            <h2>設置選項分數 - ${voteTitle}</h2>
             <div id="scoreInputs"></div>
             <button onclick="calculateScores()">計算分數</button>
         </div>
@@ -253,7 +259,7 @@ function exportScoreHistoryCSV() {
 	// 添加選項信息
 	csvContent += "選項信息:\n";
 	scoreHistory.forEach((round, index) => {
-		csvContent += `第${index + 1}次投票,`;
+		csvContent += `第${index + 1}次投票 (${voteTitle}),`;
 		round.forEach(option => {
 			csvContent += `${option.name} (${option.keyword}),`;
 		});

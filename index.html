@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>WebSocket 投票系統</title>
+	<link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+	<h1>WebSocket 投票系統</h1>
+	<div id="status">连接状态：未连接</div>
+	<div id="voteSettings">
+		<h2>投票設置</h2>
+		<input type="text" id="startVoteKeyword" placeholder="開始投票關鍵字">
+		<div id="optionInputs"></div>
+		<button onclick="addOption()">添加選項</button>
+		<button onclick="removeOption()">移除選項</button>
+		<button onclick="startVote()">開始投票</button>
+		<button onclick="endVote()">結束投票</button>
+		<button onclick="toggleAnonymous()">切換匿名模式</button>
+		<button onclick="exportScoreHistoryCSV()">導出投票歷史CSV</button>
+	</div>
+	<div id="voteResults">
+		<h2>投票結果</h2>
+		<p>總參與人數: <span id="totalVotes">0</span></p>
+		<div id="optionResults"></div>
+	</div>
+	<div id="participantCards">
+		<h2>參與者卡片</h2>
+		<div id="cardContainer"></div>
+	</div>
+	<div id="messages">
+		<h2>系統消息</h2>
+		<div id="messageContainer"></div>
+	</div>
+	<div id="history">
+		<h2>歷史記錄</h2>
+		<div id="scoreHistory"></div>
+		<div id="userHistory"></div>
+	</div>
+	<script src="script.js"></script>
+</body>
+
+</html>

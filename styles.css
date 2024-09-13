@@ -1,0 +1,99 @@
+body {
+	font-family: Arial, sans-serif;
+	max-width: 800px;
+	margin: 0 auto;
+	padding: 20px;
+}
+
+h1,
+h2,
+h3 {
+	color: #333;
+}
+
+#status {
+	margin-bottom: 20px;
+	font-weight: bold;
+}
+
+#voteSettings,
+#voteResults,
+#participantCards,
+#messages,
+#history {
+	margin-bottom: 20px;
+	border: 1px solid #ccc;
+	padding: 10px;
+}
+
+#optionInputs {
+	margin-bottom: 10px;
+}
+
+.optionKeyword {
+	margin-right: 5px;
+}
+
+button {
+	margin-right: 5px;
+}
+
+#cardContainer {
+	display: flex;
+	flex-wrap: wrap;
+}
+
+.optionCard {
+	border: 1px solid #ddd;
+	padding: 10px;
+	margin: 5px;
+	width: calc(50% - 10px);
+}
+
+.participantCard {
+	display: inline-block;
+	background-color: #f0f0f0;
+	padding: 3px 5px;
+	margin: 2px;
+	border-radius: 3px;
+}
+
+#messageContainer p,
+#scoreHistory p,
+#userHistory p {
+	margin: 5px 0;
+}
+
+.modal {
+	display: block;
+	position: fixed;
+	z-index: 1;
+	left: 0;
+	top: 0;
+	width: 100%;
+	height: 100%;
+	overflow: auto;
+	background-color: rgba(0, 0, 0, 0.4);
+}
+
+.modal-content {
+	background-color: #fefefe;
+	margin: 15% auto;
+	padding: 20px;
+	border: 1px solid #888;
+	width: 80%;
+}
+
+#scoreInputs {
+	margin-bottom: 15px;
+}
+
+#scoreInputs label {
+	display: block;
+	margin-bottom: 5px;
+}
+
+#scoreInputs input {
+	width: 50px;
+	margin-left: 10px;
+}

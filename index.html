@@ -6,48 +6,69 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>WebSocket 投票系統</title>
 	<link rel="stylesheet" href="styles.css">
+	<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+	<script type="module" src="js/main.js"></script>
 </head>
 
 <body>
-	<h1>WebSocket 投票系統</h1>
-	<div id="status">连接状态：未连接</div>
-	<div id="optionManagement">
-		<h2>選項管理</h2>
-		<div id="optionContainer"></div>
-		<button onclick="addOption()">添加選項</button>
-		<button onclick="removeOption()">移除選項</button>
-	</div>
-	<div id="voteSettings">
-		<h2>投票設置</h2>
-		<input type="text" id="voteTitle" placeholder="投票主題">
-		<input type="text" id="startVoteKeyword" placeholder="開始投票關鍵字">
-		<button onclick="startVote()">開始投票</button>
-		<button onclick="endVote()">結束投票</button>
-		<button onclick="restartCurrentVote()">重新開始投票</button>
-		<button onclick="toggleVoteChange()">允许更改投票</button>
-	</div>
-	<div id="voteResults">
-		<h2>投票結果</h2>
-		<p>總參與人數: <span id="totalVotes">0</span></p>
-		<div id="optionResults"></div>
-	</div>
-	<div id="participantCards">
-		<h2>參與者卡片</h2>
-		<button onclick="toggleAnonymous()">切換匿名模式</button>
-		<div id="cardContainer"></div>
-	</div>
-	<div id="messages">
-		<h2>系統消息</h2>
-		<div id="messageContainer"></div>
-	</div>
-	<div id="history">
-		<h2>歷史記錄</h2>
-		<button onclick="exportScoreHistoryCSV()">導出投票歷史CSV</button>
-		<div id="scoreHistory"></div>
-	</div>
-	<div id="userHistory">
-		<h2>用戶歷史</h2>
-		<div id="userHistoryContainer"></div>
+	<div class="container">
+		<header>
+			<h1>WebSocket 投票系統</h1>
+			<div id="status" class="status">連接狀態：未連接</div>
+		</header>
+
+		<main>
+			<section id="voteSettings" class="card">
+				<h2>投票設置</h2>
+				<div class="input-group">
+					<input type="text" id="voteTitle" placeholder="投票主題">
+					<input type="text" id="startVoteKeyword" placeholder="開始投票關鍵字">
+				</div>
+				<div class="button-group">
+					<button id="startVoteBtn" class="primary">開始投票</button>
+					<button id="endVoteBtn">結束投票</button>
+					<button id="restartVoteBtn">重新開始投票</button>
+					<button id="toggleVoteChangeBtn">允許更改投票</button>
+				</div>
+			</section>
+
+			<section id="optionManagement" class="card">
+				<h2>選項管理</h2>
+				<div id="optionContainer" class="option-list"></div>
+				<div class="button-group">
+					<button id="addOptionBtn">添加選項</button>
+					<button id="removeOptionBtn">移除選項</button>
+				</div>
+			</section>
+
+			<section id="voteResults" class="card">
+				<h2>投票結果</h2>
+				<p>總參與人數: <span id="totalVotes">0</span></p>
+				<div id="optionResults" class="results-chart"></div>
+			</section>
+
+			<section id="participantCards" class="card">
+				<h2>參與者卡片</h2>
+				<button id="toggleAnonymousBtn" class="toggle-btn">切換匿名模式</button>
+				<ul id="cardContainer" class="card-list"></ul>
+			</section>
+
+			<section id="messages" class="card">
+				<h2>系統消息</h2>
+				<ul id="messageContainer" class="message-list"></ul>
+			</section>
+
+			<section id="history" class="card">
+				<h2>歷史記錄</h2>
+				<button id="exportCSVBtn" class="export-btn">導出投票歷史CSV</button>
+				<div id="scoreHistory" class="history-list"></div>
+			</section>
+
+			<section id="userHistory" class="card">
+				<h2>用戶歷史</h2>
+				<ul id="userHistoryContainer" class="user-history-list"></ul>
+			</section>
+		</main>
 	</div>
 	<script src="script.js"></script>
 </body>

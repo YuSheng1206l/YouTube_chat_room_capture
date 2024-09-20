@@ -1,3 +1,7 @@
 # Auto detect text files and perform LF normalization
 * text=auto
 venv/
+build/
+dist/
+*.spec
+.venv/

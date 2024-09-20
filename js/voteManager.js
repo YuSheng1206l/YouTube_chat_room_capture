@@ -37,7 +37,11 @@ export function initVoteManager() {
 }
 
 export function processMessage(info) {
-	if (!isVoting) return;
+	console.log("Processing message in voteManager:", info);
+	if (!isVoting) {
+		console.log("Voting is not active");
+		return;
+	}
 
 	const startVoteKeyword = document.getElementById("startVoteKeyword").value;
 	const [userStartKeyword, userOptionKeyword] = info.speechText.split(' ');
